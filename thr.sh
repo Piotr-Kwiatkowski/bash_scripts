@@ -23,11 +23,17 @@ if [ -z "$1" ] || [ -z "$2" ]; then
    exit 1
 fi
 
-# FIRST ARGUMENT INCLUDES SUBSTRING stp
-if [[ "$1" =~ *"stp"* ]]; then
-   echo "$1 is not a proper stp name"
+# FIRST ARGUMENT DOES NOT INCLUDE SUBSTRING stp
+if [[ "$1" != *"stp"* ]]; then
+   printf "\n\t$1 is not a proper stp name\n\n"
    exit 2
 fi
+
+# SECOND ARGUMENT CONTAINS NON-DIGITS
+#if [[ "$2" != ^[^0-9]+$ ]]; then
+#   printf "\n\t$2 is not a proper number of jobs\n\n"
+#   exit 3
+#fi
 
 printf "Executing command: \"tgr $STP_NAME $NR_OF_JOBS\"\n"
 OUTPUT=`tgr $STP_NAME $NR_OF_JOBS`
@@ -41,7 +47,8 @@ printf "Parsing tgr output... (this may take a while)\n"
 # LOOP FOR EVERY LINE OF OUTPUT
 while read -r O_LINE; do
    if [[ $O_LINE =~ [0-9]{8} ]]; then  # FIRST 8 DIGITS IN A LINE ARE NUMBERS
-      JOB_NUMBER=${O_LINE:0:8}         # CUT FIRST 8 DIGITS FROM A LINE (job number)
+      # CUT FIRST 8 DIGITS FROM A LINE (job number)
+      JOB_NUMBER=${O_LINE:0:8}
       printf "\nJob number: $JOB_NUMBER\n"
       # RETRIEVE LINK TO JCAT LOGS
       JCAT_LINK=$(tgr $JOB_NUMBER | grep -s "Screen log (link)")
