@@ -7,8 +7,9 @@
    #                                         #
    ###########################################
    #                                         #
-   #   Author: Piotr Kwiatkowski             #
-   #   Date:   2017-08-08                    #
+   #   Author:      Piotr Kwiatkowski        #
+   #   Created:     2017-08-08               #
+   #   Last update: 2017-08-16               #
    #                                         #
    ###########################################
 
@@ -22,9 +23,9 @@ if [ -z "$1" ] || [ -z "$2" ]; then
    exit 1
 fi
 
-# STP == Ottawa
-if [[ "$1" =~ ki* ]]; then
-   printf "\n\tOttawa not supported yet\n\n"
+# FIRST ARGUMENT INCLUDES SUBSTRING stp
+if [[ "$1" =~ *"stp"* ]]; then
+   echo "$1 is not a proper stp name"
    exit 2
 fi
 
@@ -33,30 +34,32 @@ OUTPUT=`tgr $STP_NAME $NR_OF_JOBS`
 
 if [[ "$OUTPUT" == "No hits" ]]; then
    printf "\n\ttgr command returned \"No hits\" - try different value of jobs\n\n"
-   exit 3
+   exit 4
 fi
 
 printf "Parsing tgr output... (this may take a while)\n"
 # LOOP FOR EVERY LINE OF OUTPUT
-while read -r oline; do   
-   if [[ $oline =~ [0-9]{8} ]]; then  # FIXME: magic numbers
-      JOB_NUMBER=${oline:0:8}         # CUT FIRST 8 DIGITS FROM A LINE (job number)
-      printf "\nJob number $JOB_NUMBER:\n"
+while read -r O_LINE; do
+   if [[ $O_LINE =~ [0-9]{8} ]]; then  # FIRST 8 DIGITS IN A LINE ARE NUMBERS
+      JOB_NUMBER=${O_LINE:0:8}         # CUT FIRST 8 DIGITS FROM A LINE (job number)
+      printf "\nJob number: $JOB_NUMBER\n"
       # RETRIEVE LINK TO JCAT LOGS
-      if [[ "$1" =~ li* ]]; then     # FOR LINKOPING STP
-         JCAT_LINK=$(tgr $JOB_NUMBER | grep -s "Screen log (link)" | cut -b22-114)   # FIXME: magic numbers
-      elif [[ "$1" =~ ot* ]]; then   # FOR OTTAWA STP
-         JCAT_LINK=$(tgr $JOB_NUMBER | grep -s "Screen log (link)" | cut -b22-117)   # FIXME: magic numbers
-      # elif [[ "$1" =~ ki* ]]; then   # TODO: FOR KISTA STP
-         # JCAT_LINK=$(tgr $JOB_NUMBER | grep -s "Screen log (link)" | cut -b22-117)   # FIXME: magic numbers
-         # exit 5
+      JCAT_LINK=$(tgr $JOB_NUMBER | grep -s "Screen log (link)")
+      IFS='h' read -r PRE REST <<< "$JCAT_LINK"  # DELETE SUBSTRING BEFORE LETTER h
+      JCAT_LINK="h${REST}"
+      JCAT_LINK=${JCAT_LINK%txt*}  # DELETE TRASH AT THE END OF STRING
+      JCAT_LINK="${JCAT_LINK}txt"
+      WEB_CONTENT=$(wget $JCAT_LINK -q -O -)  # RETRIEVE WEB CONTENT USING LINK
+      if [[ -z $WEB_CONTENT ]]; then
+         printf "No web content returned\n"
+         continue
       fi
-      WEB_CONTENT=$(wget $JCAT_LINK -q -O -)   # RETRIEVE WEB CONTENT USING LINK
-      while read -r WLINE; do
-         if [[ $WLINE == *"DL LTESim IPEX"* ]]; then
-            printf "\t$WLINE\n"
-         elif [[ $WLINE == *"UL LTESim IPEX"* ]]; then
-            printf "\t$WLINE\n"
+
+      while read -r W_LINE; do
+         if [[ $W_LINE == *"DL LTESim IPEX"* ]]; then
+            printf "\t$W_LINE\n"
+         elif [[ $W_LINE == *"UL LTESim IPEX"* ]]; then
+            printf "\t$W_LINE\n"
          fi
       done <<< "$WEB_CONTENT"
    fi
