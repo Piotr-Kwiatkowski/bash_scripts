@@ -61,7 +61,7 @@ while read -r O_LINE; do
       IFS='h' read -r PRE REST <<< "$JCAT_LINK"
       JCAT_LINK="h${REST}"
       
-	  # DELETE TRASH AT THE END OF STRING
+      # DELETE TRASH AT THE END OF STRING
       JCAT_LINK=${JCAT_LINK%txt*}
       JCAT_LINK="${JCAT_LINK}txt"
 
