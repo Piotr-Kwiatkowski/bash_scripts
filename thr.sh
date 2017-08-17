@@ -36,32 +36,43 @@ fi
 #fi
 
 printf "Executing command: \"tgr $STP_NAME $NR_OF_JOBS\"\n"
-OUTPUT=`tgr $STP_NAME $NR_OF_JOBS`
 
+# GAIN RESULTS FROM tgr
+OUTPUT=`tgr $STP_NAME $NR_OF_JOBS`
 if [[ "$OUTPUT" == "No hits" ]]; then
    printf "\n\ttgr command returned \"No hits\" - try different value of jobs\n\n"
    exit 4
 fi
 
 printf "Parsing tgr output... (this may take a while)\n"
-# LOOP FOR EVERY LINE OF OUTPUT
+
+# ITERATE OVER LINES OF tgr OUTPUT
 while read -r O_LINE; do
-   if [[ $O_LINE =~ [0-9]{8} ]]; then  # FIRST 8 DIGITS IN A LINE ARE NUMBERS
+   # IF FIRST 8 DIGITS IN A LINE ARE NUMBERS
+   if [[ $O_LINE =~ [0-9]{8} ]]; then
       # CUT FIRST 8 DIGITS FROM A LINE (job number)
       JOB_NUMBER=${O_LINE:0:8}
       printf "\nJob number: $JOB_NUMBER\n"
+
       # RETRIEVE LINK TO JCAT LOGS
       JCAT_LINK=$(tgr $JOB_NUMBER | grep -s "Screen log (link)")
-      IFS='h' read -r PRE REST <<< "$JCAT_LINK"  # DELETE SUBSTRING BEFORE LETTER h
+      
+      # DELETE SUBSTRING BEFORE LETTER h
+      IFS='h' read -r PRE REST <<< "$JCAT_LINK"
       JCAT_LINK="h${REST}"
-      JCAT_LINK=${JCAT_LINK%txt*}  # DELETE TRASH AT THE END OF STRING
+      
+	  # DELETE TRASH AT THE END OF STRING
+      JCAT_LINK=${JCAT_LINK%txt*}
       JCAT_LINK="${JCAT_LINK}txt"
-      WEB_CONTENT=$(wget $JCAT_LINK -q -O -)  # RETRIEVE WEB CONTENT USING LINK
+
+      # RETRIEVE WEB CONTENT USING JCAT LINK
+      WEB_CONTENT=$(wget $JCAT_LINK -q -O -)
       if [[ -z $WEB_CONTENT ]]; then
          printf "No web content returned\n"
          continue
       fi
 
+      # PARSING FOR DL/UL VALUE
       while read -r W_LINE; do
          if [[ $W_LINE == *"DL LTESim IPEX"* ]]; then
             printf "\t$W_LINE\n"
